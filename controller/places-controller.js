@@ -1,19 +1,24 @@
 const mongoose= require('mongoose');
-const { MongoClient, ObjectID } = require('mongodb');
-const Post=require('../models/post');
+const address2coords=require('../util/address2coords');
+
 const User=require('../models/user');
+const Place=require('../models/place');
+
 const HttpError = require('../models/http-error');
 
 
-const getPostByUserId= async(req,res,next)=>{
-    
-};
+const createPlace = async (req, res, next) => {
 
-const getPostByPostId= async(req,res,next)=>{
-    
-}
-
-const createPost = async (req, res, next) => {
+    let coordinates;
+    /*const { title, description, address } = req.body;
+    creator=req.userData.userId;*/
+    const address= 'Taipei 101';
+    try {
+        coordinates = await address2coords(address);
+    } catch (error) {
+        next(error);
+        return;
+    };
 
     let testUserId;
 
@@ -24,14 +29,17 @@ const createPost = async (req, res, next) => {
         return ;   
     }
 
-    const newPost = new Post({
+    const newPlace = new Place({
         title:'testTitle',
         description:'testDescription',
-        steps: [],
+        imageUrl: './test/testUrl',
+        address,
+        location:coordinates,
         creator:testUserId.id
     })
     
     let user;    
+    console.log(coordinates);
     try{
         user=await User.findById(testUserId.id);
     }catch(err){
@@ -44,15 +52,13 @@ const createPost = async (req, res, next) => {
         return next(error);
     }
 
-    console.log(user);
-    console.log(newPost);
+    console.log(newPlace);
     // save place and update user,so we have to do a transaction
     try{
-        //await newPost.save();
         const sess=await mongoose.startSession();
         sess.startTransaction();
-        await newPost.save({session:sess});
-        user.postIds.push(newPost);
+        await newPlace.save({session:sess});
+        user.placeIds.push(newPlace);
         await user.save({session:sess});
         await sess.commitTransaction();
 
@@ -61,9 +67,7 @@ const createPost = async (req, res, next) => {
         return next(err);
     }
 
-    res.status(201).json({ post: newPost });
+    res.status(201).json({ place: newPlace });
 }
 
-exports.getPostByPostId=getPostByPostId;
-exports.getPostByUserId=getPostByUserId;
-exports.createPost=createPost;
+exports.createPlace=createPlace;
