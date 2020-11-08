@@ -4,6 +4,7 @@ const Schema= mongoose.Schema;
 
 const placeSchenma= new Schema({
     title:{type:String, required:true},
+    subtitle:{type:String, required:true},
     description:{type:String, required:true},
     imageUrl:{type:String, required:true},
     address:{type:String, required:true},

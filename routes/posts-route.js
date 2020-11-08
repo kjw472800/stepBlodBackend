@@ -1,10 +1,12 @@
 const express= require('express');
 const postsControllers= require('../controller/posts-controller');
-
+const checkAuth= require('../middleware/check-auth');
 
 
 const router=express.Router();
-router.post('/createPost',postsControllers.createPost);
+
+router.use(checkAuth);
+router.post('/createpost',postsControllers.createPost);
 
 
 

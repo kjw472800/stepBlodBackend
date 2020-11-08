@@ -77,7 +77,7 @@ const login = async (req,res,next)=>{
     } 
     
     if(!isValidPassword){
-        next( new HttpError('Invaild password',401));
+        next( new HttpError('Invaild passwordQQ',401));
         return;
     }
 
