@@ -5,27 +5,27 @@ const User=require('../models/user');
 const HttpError = require('../models/http-error');
 const place = require('../models/place');
 
-
+///return {post, creator:user.userName};
 const getPostByUserId= async(req,res,next)=>{
-    const userId = req.params.uid; //{pid:'p1'}
-
-    let userWithPosts;
+    const userId = req.userData.userId; //{pid:'p1'}
+    
+    let posts;
     try{
-        //get cursor by Mongo, array by Mongoose
-        // User.find({creator:userId})
-        userWithPosts = await User.findById(userId).populate('posts');
-    }
-    catch(err){
-        const error= new HttpError("Could not get a post by this user id",500);
+        posts= await Post.find({creator:userId}).populate('steps').populate('creator');
+    }catch(err){
+        const error= new HttpError('Could not fetch posts',500);
         next(error);
         return;
-    }  
-
-    if (!userWithPosts || userWithPosts.posts.length === 0) {
-        const error = new HttpError('Sorry, this user has no place to share', 404);
-        return next(error);
     }
-    res.json({ places: userWithPosts.posts.map(post=>post.toObject({getters:true})) });
+    
+    let response;
+    const postsWithCreator= posts.map(p=>p.toObject({getters:true}));
+
+    response= postsWithCreator.map((p)=>{         
+        
+        return {...p,creator:p.creator.userName}
+    })
+    res.json({ posts: response });
 };
 
 const getPostByPostId= async(req,res,next)=>{  
@@ -50,27 +50,46 @@ const getPostByPostId= async(req,res,next)=>{
     res.json({place: post.toObject({getters:true})})
 }
 
+const getAllPosts= async(req,res,next)=>{
+    
+    let posts;
+    try{
+        posts= await Post.find().populate('steps').populate('creator');
+    }catch(err){
+        const error= new HttpError('Could not fetch posts',500);
+        next(error);
+        return;
+    }
+    
+    let response;
+    const postsWithCreator= posts.map(p=>p.toObject({getters:true}));
+    //console.log(postsWithCreator);
+    response= postsWithCreator.map((p)=>{         
+        
+        return {...p,creator:p.creator.userName}
+    })
+    //console.log(response);
+    res.json({ posts: response });
+}
+
 const createPost = async (req, res, next) => {
 
-    let testUserId;
-
-    try{
-        testUserId=await User.findOne({email:'test1@test.com'});
-    }catch(error){
-        next(error);
-        return ;   
-    }
+    let {title,description,steps,subtitle}= req.body;
+    const creator=req.userData.userId;
+    steps=steps.split(",");
 
     const newPost = new Post({
-        title:'testTitle',
-        description:'testDescription',
-        steps: [],
-        creator:testUserId.id
+        title,
+        description,
+        steps,
+        creator,
+        subtitle,
+        imageUrl:req.file.path
     })
     
     let user;    
     try{
-        user=await User.findById(testUserId.id);
+        user=await User.findById(creator);
     }catch(err){
         const error= new HttpError("Creating place failed,Sorry about system errors",500);
         return next(error);
@@ -95,10 +114,10 @@ const createPost = async (req, res, next) => {
         const error= new HttpError("Creating place failed",500);
         return next(err);
     }
-
     res.status(201).json({ post: newPost });
 }
 
 exports.getPostByPostId=getPostByPostId;
 exports.getPostByUserId=getPostByUserId;
 exports.createPost=createPost;
+exports.getAllPosts=getAllPosts;

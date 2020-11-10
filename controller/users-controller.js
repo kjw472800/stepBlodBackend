@@ -12,7 +12,7 @@ const jwt=require('jsonwebtoken');
 
 const signup = async (req,res,next)=>{
     
-    const {name,email,password}= req.body;
+    const {name,email,password,userName}= req.body;
     
     let hashedPassword;
     try{
@@ -28,6 +28,8 @@ const signup = async (req,res,next)=>{
         name,
         email,
         password:hashedPassword,
+        userName,
+        placeIds:[],
         postIds:[]
     })
 
