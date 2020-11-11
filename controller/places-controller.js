@@ -5,6 +5,7 @@ const User=require('../models/user');
 const Place=require('../models/place');
 
 const HttpError = require('../models/http-error');
+const {validationResult}= require('express-validator');
 
 ///return {place, creator:user.userName};
 
@@ -83,6 +84,13 @@ const getPlaceById = async (req, res, next) => {
 
 
 const createPlace = async (req, res, next) => {
+    const errors=validationResult(req);
+    
+    if(!errors.isEmpty()){
+        const error= new HttpError('Invalid place creation',422);
+        next(error);
+        return;
+    }
 
     let coordinates;
     const { title, subtitle,description } = req.body;
@@ -134,6 +142,49 @@ const createPlace = async (req, res, next) => {
     }
 
     res.status(201).json({ place: newPlace });
+}
+
+const deletePlace =async (req, res, next) => {
+    const placeId = req.params.pid;
+
+    let place;
+    try{
+        /// link to user and save it as place.creator
+        place = await Place.findById(placeId).populate('creator');
+    }
+    catch(err){
+        const error= new HttpError("Could not delete a place by a id",500);
+        next(error);
+        return;
+    }  
+
+    if (!place) {
+        const error= new HttpError("Could not find a place which you want to delete with this id",500);
+        return next(error);
+    }
+
+    if(place.creator.id!==req.userData.userId){
+        const error= new HttpError("Unauthorized",401);
+        return next(error);
+    }
+
+    const imagePath= place.imageUrl; 
+    try{
+        const sess= await mongoose.startSession();
+        sess.startTransaction();
+        await place.remove({session:sess});
+        place.creator.placeIds.pull(place);
+        await place.creator.save({session:sess});
+        await sess.commitTransaction();
+
+    }catch(err){
+        const error= new HttpError("Could not delete",500);
+        return next(error);
+    };
+    fs.unlink(imagePath,err=>{
+        console.log(err);
+    })
+    res.status(200).json({ message: "Successfully delete!" });
 }
 exports.getAllPlace=getAllPlace;
 exports.getPlaceById=getPlaceById;

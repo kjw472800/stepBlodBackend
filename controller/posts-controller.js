@@ -4,7 +4,8 @@ const Post=require('../models/post');
 const User=require('../models/user');
 const HttpError = require('../models/http-error');
 const place = require('../models/place');
-
+const fs= require('fs');
+const {validationResult}= require('express-validator');
 ///return {post, creator:user.userName};
 const getPostByUserId= async(req,res,next)=>{
     const userId = req.userData.userId; //{pid:'p1'}
@@ -73,6 +74,13 @@ const getAllPosts= async(req,res,next)=>{
 }
 
 const createPost = async (req, res, next) => {
+    const errors=validationResult(req);
+    
+    if(!errors.isEmpty()){
+        const error= new HttpError('Invalid post creation',422);
+        next(error);
+        return;
+    }
 
     let {title,description,steps,subtitle}= req.body;
     const creator=req.userData.userId;
@@ -117,7 +125,51 @@ const createPost = async (req, res, next) => {
     res.status(201).json({ post: newPost });
 }
 
+const deletePost =async (req, res, next) => {
+    const postId = req.params.pid;
+
+    let post;
+    try{
+        post = await Post.findById(postId).populate('creator');
+    }
+    catch(err){
+        const error= new HttpError("Could not delete a post by a id",500);
+        next(error);
+        return;
+    }  
+
+    if (!post) {
+        const error= new HttpError("Could not find a post which you want to delete with this id",500);
+        return next(error);
+    }
+
+    if(post.creator.id!==req.userData.userId){
+        const error= new HttpError("Unauthorized",401);
+        return next(error);
+    }
+
+    const imagePath= post.imageUrl; 
+    try{
+        const sess= await mongoose.startSession();
+        sess.startTransaction();
+        await post.remove({session:sess});
+        post.creator.postIds.pull(post);
+        await post.creator.save({session:sess});
+        await sess.commitTransaction();
+
+    }catch(err){
+        const error= new HttpError("Could not delete",500);
+        return next(error);
+    };
+    console.log(imagePath);
+    fs.unlink(imagePath,err=>{
+        console.log(err);
+    })
+    res.status(200).json({ message: "Successfully delete!" });
+}
+
 exports.getPostByPostId=getPostByPostId;
 exports.getPostByUserId=getPostByUserId;
 exports.createPost=createPost;
 exports.getAllPosts=getAllPosts;
+exports.deletePost=deletePost;

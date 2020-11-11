@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+const {validationResult}= require('express-validator');
 const User=require('../models/user');
 const HttpError = require('../models/http-error');
 
@@ -11,8 +12,15 @@ const jwt=require('jsonwebtoken');
 
 
 const signup = async (req,res,next)=>{
+    const errors=validationResult(req);
     
-    const {name,email,password,userName}= req.body;
+    if(!errors.isEmpty()){
+        const error= new HttpError('Invalid signup',422);
+        next(error);
+        return;
+    }
+
+    const {email,password,userName}= req.body;
     
     let hashedPassword;
     try{
@@ -25,7 +33,6 @@ const signup = async (req,res,next)=>{
     }
     
     const newUser= new User({
-        name,
         email,
         password:hashedPassword,
         userName,
