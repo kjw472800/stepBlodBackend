@@ -27,7 +27,7 @@ const getAllPlace = async (req, res, next) => {
         
         return {...p,creator:p.creator.userName};
     })
-    console.log(response);
+    //console.log(response);
     res.status(200).json({places:response});
 };
 
@@ -44,7 +44,7 @@ const getPlacesByUserId = async(req, res, next) => {
         next(error);
         return;
     }  
-    console.log(userWithPlaces);
+    //console.log(userWithPlaces);
     if (!userWithPlaces || userWithPlaces.placeIds.length === 0) {
         res.json({
             places:[]
@@ -93,16 +93,15 @@ const createPlace = async (req, res, next) => {
     }
 
     let coordinates;
-    const { title, subtitle,description } = req.body;
+    const { title, subtitle,description,address } = req.body;
     creator=req.userData.userId;
-    const address= 'Taipei 101';
     try {
         coordinates = await address2coords(address);
     } catch (error) {
         next(error);
         return;
     };
-
+    
 
     const newPlace = new Place({
         title,
@@ -140,7 +139,7 @@ const createPlace = async (req, res, next) => {
         const error= new HttpError("Creating place failed",500);
         return next(err);
     }
-
+    //console.log(newPlace);
     res.status(201).json({ place: newPlace });
 }
 

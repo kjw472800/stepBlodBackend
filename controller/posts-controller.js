@@ -161,7 +161,7 @@ const deletePost =async (req, res, next) => {
         const error= new HttpError("Could not delete",500);
         return next(error);
     };
-    console.log(imagePath);
+    //console.log(imagePath);
     fs.unlink(imagePath,err=>{
         console.log(err);
     })

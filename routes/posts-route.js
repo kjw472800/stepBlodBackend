@@ -9,7 +9,7 @@ const router=express.Router();
 
 router.get('/',postsControllers.getAllPosts);
 router.use(checkAuth);
-const postValidators=[check('title').not().isEmpty(), check('description').isLength({min:10})];
+const postValidators=[check('title').not().isEmpty(), check('description').isLength({min:5})];
 router.post('/',fileUpload.single('image'),postValidators,postsControllers.createPost);
 router.get('/user',postsControllers.getPostByUserId);
 router.delete('/:pid',postsControllers.deletePost);
