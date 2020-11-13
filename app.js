@@ -13,6 +13,8 @@ const HttpError = require('./models/http-error')
 
 
 const app = express();
+
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.use('/uploads/images', express.static(path.join('uploads','images')));
