@@ -1,6 +1,7 @@
 # stepBlogBackend
 
 ## Development
+```bash
 1. npm install\
 # config environment variables 
 2. set .env\
@@ -10,4 +11,4 @@ jwtKey=YOUR_JWTKey \
 GOOGLE_API_KEY=YOUR_GOOGLE_API \
 # run dev server 
 3. npm start
-
+```
