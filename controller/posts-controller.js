@@ -1,10 +1,7 @@
 const mongoose= require('mongoose');
-const { MongoClient, ObjectID } = require('mongodb');
 const Post=require('../models/post');
 const User=require('../models/user');
 const HttpError = require('../models/http-error');
-const place = require('../models/place');
-const fs= require('fs');
 const {validationResult}= require('express-validator');
 
 const {v1:uuid}= require('uuid');

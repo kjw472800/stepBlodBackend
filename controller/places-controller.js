@@ -7,7 +7,6 @@ const AWS= require('aws-sdk');
 const User=require('../models/user');
 const Place=require('../models/place');
 const HttpError = require('../models/http-error');
-const { response } = require('express');
 
 
 ///return {place, creator:user.userName};
