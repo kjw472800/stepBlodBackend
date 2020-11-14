@@ -1,5 +1,4 @@
 const multer= require('multer');
-const {v1:uuid}= require('uuid');
 
 
 const MINE_TYPE_MAP={
@@ -11,16 +10,17 @@ const MINE_TYPE_MAP={
 const fileUpload= multer({
 
     limits: 500000,
-    storage: multer.diskStorage({
-        destination: (req,file,callback)=>{
+    storage: multer.memoryStorage(),
+    // multer.diskStorage({
+    //     destination: (req,file,callback)=>{
             
-             callback(null, 'uploads/images');
-        },
-        filename:(req,file,callback)=>{
-            const ext= MINE_TYPE_MAP[file.mimetype];
-            callback(null, uuid()+'.'+ext);
-        }   
-    }),
+    //          callback(null, 'uploads/images');
+    //     },
+    //     filename:(req,file,callback)=>{
+    //         const ext= MINE_TYPE_MAP[file.mimetype];
+    //         callback(null, uuid()+'.'+ext);
+    //     }   
+    // }),
     fileFilter: (req,file,callback)=>{
         // !!convert null or undefined to false
         const isVaild= !!MINE_TYPE_MAP[file.mimetype];

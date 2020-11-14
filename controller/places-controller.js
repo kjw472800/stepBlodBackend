@@ -1,11 +1,14 @@
 const mongoose= require('mongoose');
 const address2coords=require('../util/address2coords');
+const {validationResult}= require('express-validator');
+const {v1:uuid}= require('uuid');
+const AWS= require('aws-sdk');
 
 const User=require('../models/user');
 const Place=require('../models/place');
-
 const HttpError = require('../models/http-error');
-const {validationResult}= require('express-validator');
+const { response } = require('express');
+
 
 ///return {place, creator:user.userName};
 
@@ -101,16 +104,43 @@ const createPlace = async (req, res, next) => {
         next(error);
         return;
     };
+
+    const file=req.file;
     
+    const s3bucket= new AWS.S3({
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_ACCESS_SECRET_KEY,
+        region: process.env.AWS_REGION
+    });
+
+    const params = {
+        Bucket: process.env.AWS_BUCKET,
+        Key: uuid(),
+        Body: file.buffer,
+        ContentType: file.mimetype,
+        ACL: "public-read"
+    };
+   
+    try{
+        let p= await s3bucket.upload(params).promise();
+    
+        req.imgKey=params.Key;
+    }catch(err){
+        //console.log(err);
+        const error= new HttpError('s3 image upload failed',500);
+        next(error);
+        return;
+    }
 
     const newPlace = new Place({
         title,
         description,
         subtitle,
-        imageUrl:req.file.path,
+        imageUrl:process.env.AWS_FILE_URL+params.Key,
         address,
         location:coordinates,
-        creator
+        creator,
+        imageKey:params.Key
     })
     
     let user;    
@@ -180,9 +210,7 @@ const deletePlace =async (req, res, next) => {
         const error= new HttpError("Could not delete",500);
         return next(error);
     };
-    fs.unlink(imagePath,err=>{
-        console.log(err);
-    })
+
     res.status(200).json({ message: "Successfully delete!" });
 }
 exports.getAllPlace=getAllPlace;

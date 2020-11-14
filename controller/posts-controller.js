@@ -6,6 +6,10 @@ const HttpError = require('../models/http-error');
 const place = require('../models/place');
 const fs= require('fs');
 const {validationResult}= require('express-validator');
+
+const {v1:uuid}= require('uuid');
+const AWS= require('aws-sdk');
+
 ///return {post, creator:user.userName};
 const getPostByUserId= async(req,res,next)=>{
     const userId = req.userData.userId; //{pid:'p1'}
@@ -82,6 +86,31 @@ const createPost = async (req, res, next) => {
         return;
     }
 
+
+    const file=req.file;
+    
+    const s3bucket= new AWS.S3({
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_ACCESS_SECRET_KEY,
+        region: process.env.AWS_REGION
+    });
+
+    const params = {
+        Bucket: process.env.AWS_BUCKET,
+        Key: uuid(),
+        Body: file.buffer,
+        ContentType: file.mimetype,
+        ACL: "public-read"
+    };
+   
+    try{
+        let p= await s3bucket.upload(params).promise();
+        req.imgKey=params.Key;
+    }catch(err){
+        const error= new HttpError('s3 image upload failed',500);
+        next(error);
+        return;
+    }
     let {title,description,steps,subtitle}= req.body;
     const creator=req.userData.userId;
     steps=steps.split(",");
@@ -92,7 +121,8 @@ const createPost = async (req, res, next) => {
         steps,
         creator,
         subtitle,
-        imageUrl:req.file.path
+        imageUrl:process.env.AWS_FILE_URL+params.Key,
+        imageKey:params.Key
     })
     
     let user;    
@@ -104,6 +134,7 @@ const createPost = async (req, res, next) => {
     }
 
     if(!user){
+        
         const error= new HttpError("Creating place failed,Could not find this user",500);
         return next(error);
     }
@@ -120,7 +151,7 @@ const createPost = async (req, res, next) => {
 
     }catch(err){
         const error= new HttpError("Creating place failed",500);
-        return next(err);
+        return next(error);
     }
     res.status(201).json({ post: newPost });
 }
@@ -137,18 +168,38 @@ const deletePost =async (req, res, next) => {
         next(error);
         return;
     }  
-
+    
     if (!post) {
         const error= new HttpError("Could not find a post which you want to delete with this id",500);
         return next(error);
     }
+
 
     if(post.creator.id!==req.userData.userId){
         const error= new HttpError("Unauthorized",401);
         return next(error);
     }
 
-    const imagePath= post.imageUrl; 
+    let s3bucket = new AWS.S3({
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_ACCESS_SECRET_KEY,
+        region: process.env.AWS_REGION
+    });
+    let params = {
+        Bucket: process.env.AWS_BUCKET,
+        Key: post.imageKey
+    };
+
+    try{
+        await s3bucket.deleteObject(params).promise();
+
+    }catch(err){
+            const error= new HttpError('delete failed delete image failed',500);
+            next(error);
+            return;
+    }
+
+
     try{
         const sess= await mongoose.startSession();
         sess.startTransaction();
@@ -161,10 +212,6 @@ const deletePost =async (req, res, next) => {
         const error= new HttpError("Could not delete",500);
         return next(error);
     };
-    //console.log(imagePath);
-    fs.unlink(imagePath,err=>{
-        console.log(err);
-    })
     res.status(200).json({ message: "Successfully delete!" });
 }
 
