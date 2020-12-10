@@ -3,9 +3,9 @@
 Backend is deployed to [Heroku](https://www.heroku.com/). \
 Frontend is hosted by [Firebase](https://firebase.google.com/). 
 
-Website url: https://footprint-frontend.web.app/posts \
-Backend:https://github.com/kjw472800/stepBlogBackend \
-Frontend:https://github.com/kjw472800/stepBlogfrontend
+invalid: Website url: https://footprint-frontend.web.app/posts \
+invalid: Backend:https://github.com/kjw472800/stepBlogBackend \
+invalid: Frontend:https://github.com/kjw472800/stepBlogfrontend
 
 ## Development
 ```bash
